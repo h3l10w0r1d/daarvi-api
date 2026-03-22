@@ -11,7 +11,11 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     ALGORITHM: str = "HS256"
 
-    # Replicate API token for virtual try-on (IDM-VTON model)
+    # FASHN AI — virtual try-on (tryon-v1.6, 5–17s, production quality)
+    # Get yours at https://fashn.ai/products/api
+    FASHN_API_KEY: str = ""
+
+    # Replicate — rotation video only (Wan 2.2 i2v)
     # Get yours at https://replicate.com/account/api-tokens
     REPLICATE_API_TOKEN: str = ""
 
