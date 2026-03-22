@@ -11,6 +11,10 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     ALGORITHM: str = "HS256"
 
+    # Replicate API token for virtual try-on (IDM-VTON model)
+    # Get yours at https://replicate.com/account/api-tokens
+    REPLICATE_API_TOKEN: str = ""
+
     # Comma-separated list of allowed CORS origins.
     # In production set to your Vercel URL, e.g.:
     #   https://your-app.vercel.app,https://www.your-domain.com

@@ -7,7 +7,7 @@ from app.config import settings
 from app.database import engine
 from app.models import *  # noqa: F401, F403 — registers all models with Base.metadata
 from app.database import Base
-from app.routers import auth, brands, orders, products, stores, users
+from app.routers import auth, brands, orders, products, stores, tryon, users
 
 
 @asynccontextmanager
@@ -40,6 +40,7 @@ app.include_router(brands.router)
 app.include_router(stores.router)
 app.include_router(users.router)
 app.include_router(orders.router)
+app.include_router(tryon.router)
 
 
 @app.get("/health")
