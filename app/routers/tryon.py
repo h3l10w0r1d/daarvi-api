@@ -14,9 +14,9 @@ router = APIRouter(prefix="/try-on", tags=["try-on"])
 # ── Replicate classic endpoint (works for all community models) ───────────────
 REPLICATE_PREDS = "https://api.replicate.com/v1/predictions"
 
-# CatVTON-Flux — ICLR 2025 SOTA try-on, much better than IDM-VTON
-# https://replicate.com/mmezhov/catvton-flux
-CATVTON_VERSION = "cc41d1b963023987ed2ddf26e9264efcc96ee076640115c303f95b0010f6a958"
+# IDM-VTON — reliable, no extra tokens required
+# https://replicate.com/cuuupid/idm-vton
+CATVTON_VERSION = "c871bb9b046607b680449ecbae55fd8c6d945e0a1948644bf2361b3d021d3ff4"
 
 # Wan 2.2 i2v-fast — fast image → video (rotation animation)
 # https://replicate.com/wan-video/wan-2.2-i2v-fast
@@ -125,14 +125,15 @@ async def generate_try_on(
 
     person_data_uri = _to_data_uri(img_bytes, mime)
 
-    # CatVTON-Flux inputs: image (person), garment (clothing), try_on=True
+    # IDM-VTON inputs
     data = await _submit(CATVTON_VERSION, {
-        "image":   person_data_uri,
-        "garment": garment_image_url,
-        "try_on":  True,
-        "num_steps": 30,
-        "guidance_scale": 2.5,
-        "seed": 42,
+        "human_img":       person_data_uri,
+        "garm_img":        garment_image_url,
+        "garment_des":     "fashion garment",
+        "is_checked":      True,
+        "is_checked_crop": False,
+        "denoise_steps":   40,   # higher = better quality (was 30)
+        "seed":            42,
     })
 
     return GenerateResponse(prediction_id=data["id"], status=data["status"])
