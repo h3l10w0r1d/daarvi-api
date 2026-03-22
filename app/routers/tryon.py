@@ -116,7 +116,7 @@ async def generate_try_on(
 
     person_data_uri = _to_data_uri(img_bytes, mime)
 
-    async with httpx.AsyncClient(timeout=30.0) as http:
+    async with httpx.AsyncClient(timeout=90.0) as http:
         resp = await http.post(
             FASHN_RUN,
             headers=_fashn_headers(),
