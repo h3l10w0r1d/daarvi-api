@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     # Get yours at https://replicate.com/account/api-tokens
     REPLICATE_API_TOKEN: str = ""
 
+    # OpenAI — Look Picker outfit assistant (GPT-4o, multilingual)
+    # Get yours at https://platform.openai.com/api-keys
+    OPENAI_API_KEY: str = ""
+
     # Comma-separated list of allowed CORS origins.
     # In production set to your Vercel URL, e.g.:
     #   https://your-app.vercel.app,https://www.your-domain.com
