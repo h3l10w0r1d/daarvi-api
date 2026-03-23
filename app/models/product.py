@@ -22,6 +22,7 @@ class Product(Base):
     delivery_local: Mapped[Optional[str]] = mapped_column(String(100))
     material: Mapped[Optional[str]] = mapped_column(String(300))
     fit: Mapped[Optional[str]] = mapped_column(String(100))
+    image_hover: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # secondary/hover image for admin panel + cards
 
     brand: Mapped["Brand"] = relationship("Brand", back_populates="products")  # noqa: F821
     images: Mapped[List["ProductImage"]] = relationship("ProductImage", back_populates="product", order_by="ProductImage.position", lazy="selectin", cascade="all, delete-orphan")

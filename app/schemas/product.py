@@ -28,6 +28,7 @@ class ProductOut(BaseModel):
     delivery_local: str | None = None
     material: str | None = None
     fit: str | None = None
+    image_hover: str | None = None  # secondary image shown on hover / swipe
     images: list[ProductImageOut] = []
     colors: list[ProductColorOut] = []
     sizes: list[str] = []
@@ -50,6 +51,7 @@ class ProductOut(BaseModel):
             delivery_local=p.delivery_local,
             material=p.material,
             fit=p.fit,
+            image_hover=p.image_hover,
             images=[ProductImageOut.model_validate(i) for i in p.images],
             colors=[ProductColorOut.model_validate(c) for c in p.colors],
             sizes=[s.size for s in p.sizes],
