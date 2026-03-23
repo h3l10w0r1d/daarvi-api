@@ -4,7 +4,7 @@ from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.outfit import Outfit, OutfitItem
+from app.models.outfit import Outfit, OutfitItem, OutfitRating, SavedOutfit
 from app.models.product import Product, ProductAvailability, ProductTag
 
 
@@ -198,3 +198,121 @@ async def generate_outfit(
     )
     outfit.items = outfit_items
     return outfit
+
+
+# ─── Saved outfits ────────────────────────────────────────────────────────────
+
+_OUTFIT_LOAD_OPTIONS = [
+    selectinload(Outfit.items).selectinload(OutfitItem.product).selectinload(Product.brand),
+    selectinload(Outfit.items).selectinload(OutfitItem.product).selectinload(Product.images),
+    selectinload(Outfit.items).selectinload(OutfitItem.product).selectinload(Product.colors),
+    selectinload(Outfit.items).selectinload(OutfitItem.product).selectinload(Product.sizes),
+    selectinload(Outfit.items).selectinload(OutfitItem.product).selectinload(Product.tags),
+    selectinload(Outfit.items).selectinload(OutfitItem.product).selectinload(Product.availability),
+]
+
+
+async def save_outfit(db: AsyncSession, user_id: str, outfit_id: str) -> None:
+    existing = await db.execute(
+        select(SavedOutfit).where(
+            and_(SavedOutfit.user_id == user_id, SavedOutfit.outfit_id == outfit_id)
+        )
+    )
+    if not existing.scalars().first():
+        db.add(SavedOutfit(user_id=user_id, outfit_id=outfit_id))
+        await db.commit()
+
+
+async def unsave_outfit(db: AsyncSession, user_id: str, outfit_id: str) -> None:
+    result = await db.execute(
+        select(SavedOutfit).where(
+            and_(SavedOutfit.user_id == user_id, SavedOutfit.outfit_id == outfit_id)
+        )
+    )
+    row = result.scalars().first()
+    if row:
+        await db.delete(row)
+        await db.commit()
+
+
+async def get_saved_outfits(db: AsyncSession, user_id: str) -> list[Outfit]:
+    stmt = (
+        select(Outfit)
+        .join(SavedOutfit, SavedOutfit.outfit_id == Outfit.id)
+        .where(SavedOutfit.user_id == user_id)
+        .options(*_OUTFIT_LOAD_OPTIONS)
+    )
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def get_saved_outfit_ids(db: AsyncSession, user_id: str) -> list[str]:
+    result = await db.execute(
+        select(SavedOutfit.outfit_id).where(SavedOutfit.user_id == user_id)
+    )
+    return list(result.scalars().all())
+
+
+# ─── Outfit ratings ───────────────────────────────────────────────────────────
+
+async def rate_outfit(db: AsyncSession, user_id: str, outfit_id: str, rating: str) -> None:
+    result = await db.execute(
+        select(OutfitRating).where(
+            and_(OutfitRating.user_id == user_id, OutfitRating.outfit_id == outfit_id)
+        )
+    )
+    row = result.scalars().first()
+    if row:
+        row.rating = rating
+    else:
+        db.add(OutfitRating(user_id=user_id, outfit_id=outfit_id, rating=rating))
+    await db.commit()
+
+
+# ─── Swap alternatives ────────────────────────────────────────────────────────
+
+_ROLE_CATEGORIES: dict[str, list[str]] = {
+    "anchor":    ["outerwear", "dresses"],
+    "top":       ["tops"],
+    "bottom":    ["bottoms"],
+    "shoes":     ["shoes", "footwear"],
+    "bag":       ["bags", "accessories"],
+    "accessory": ["accessories"],
+}
+
+_PRODUCT_LOAD_OPTIONS = [
+    selectinload(Product.brand),
+    selectinload(Product.images),
+    selectinload(Product.colors),
+    selectinload(Product.sizes),
+    selectinload(Product.tags),
+    selectinload(Product.availability),
+]
+
+
+async def get_alternatives(
+    db: AsyncSession,
+    role: str,
+    scope: str,
+    exclude_id: str | None = None,
+    limit: int = 6,
+) -> list[Product]:
+    categories = _ROLE_CATEGORIES.get(role, [])
+    stmt = select(Product).options(*_PRODUCT_LOAD_OPTIONS)
+
+    if categories:
+        stmt = stmt.where(Product.category.in_(categories))
+    if exclude_id:
+        stmt = stmt.where(Product.id != exclude_id)
+    if scope and scope != "both":
+        stmt = stmt.join(
+            ProductAvailability,
+            and_(
+                ProductAvailability.product_id == Product.id,
+                ProductAvailability.mode == scope,
+            ),
+        )
+
+    result = await db.execute(stmt.distinct())
+    candidates = list(result.scalars().all())
+    return random.sample(candidates, min(limit, len(candidates)))

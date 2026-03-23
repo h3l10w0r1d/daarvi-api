@@ -28,6 +28,7 @@ class OutfitOut(BaseModel):
     scope: str
     occasion: str | None = None
     style_tags: list[str] = []
+    hero_image: str | None = None
     anchor_id: str | None = None
     items: list[OutfitItemOut] = []
 
@@ -46,6 +47,7 @@ class OutfitOut(BaseModel):
             scope=o.scope,
             occasion=o.occasion,
             style_tags=tags,
+            hero_image=getattr(o, "hero_image", None),
             anchor_id=o.anchor_id,
             items=[OutfitItemOut.from_orm_item(i) for i in o.items],
         )

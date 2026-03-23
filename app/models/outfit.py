@@ -20,6 +20,7 @@ class Outfit(Base):
     scope: Mapped[str] = mapped_column(String(20), nullable=False)       # "local" | "global" | "both"
     occasion: Mapped[Optional[str]] = mapped_column(String(100))         # "casual" | "evening" | "work" | "weekend"
     style_tags: Mapped[Optional[str]] = mapped_column(Text)              # JSON-encoded list e.g. '["dark","minimalist"]'
+    hero_image: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # lifestyle/editorial photo of the full look
     anchor_id: Mapped[Optional[str]] = mapped_column(
         UUID(as_uuid=False), ForeignKey("products.id", ondelete="SET NULL"), nullable=True
     )
@@ -42,3 +43,28 @@ class OutfitItem(Base):
     is_core: Mapped[bool] = mapped_column(Boolean, default=True)        # pre-selected by default
 
     product: Mapped["Product"] = relationship("Product", lazy="selectin")  # noqa: F821
+
+
+class SavedOutfit(Base):
+    """User-saved outfits (bookmarks). Composite PK prevents duplicates."""
+    __tablename__ = "saved_outfits"
+
+    user_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=False), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    outfit_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=False), ForeignKey("outfits.id", ondelete="CASCADE"), primary_key=True
+    )
+
+
+class OutfitRating(Base):
+    """Thumbs-up / thumbs-down per user per outfit. Drives personalization."""
+    __tablename__ = "outfit_ratings"
+
+    user_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=False), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    outfit_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=False), ForeignKey("outfits.id", ondelete="CASCADE"), primary_key=True
+    )
+    rating: Mapped[str] = mapped_column(String(10), nullable=False)     # "up" | "down"
