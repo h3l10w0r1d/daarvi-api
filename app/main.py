@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 
 from app.config import settings
 from app.database import engine
@@ -12,9 +13,40 @@ from app.routers import auth, brands, chat, orders, outfits, products, stores, t
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create tables on startup (Alembic handles migrations in production)
     async with engine.begin() as conn:
+        # Create any brand-new tables
         await conn.run_sync(Base.metadata.create_all)
+
+        # ── Idempotent column / table migrations ──────────────────────────
+        # ADD COLUMN IF NOT EXISTS is safe to run on every startup
+        await conn.execute(text(
+            "ALTER TABLE outfits ADD COLUMN IF NOT EXISTS hero_image TEXT"
+        ))
+        await conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS saved_outfits (
+                user_id   UUID NOT NULL REFERENCES users(id)   ON DELETE CASCADE,
+                outfit_id UUID NOT NULL REFERENCES outfits(id) ON DELETE CASCADE,
+                PRIMARY KEY (user_id, outfit_id)
+            )
+        """))
+        await conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS outfit_ratings (
+                user_id   UUID        NOT NULL REFERENCES users(id)   ON DELETE CASCADE,
+                outfit_id UUID        NOT NULL REFERENCES outfits(id) ON DELETE CASCADE,
+                rating    VARCHAR(10) NOT NULL CHECK (rating IN ('up','down')),
+                PRIMARY KEY (user_id, outfit_id)
+            )
+        """))
+        # Indexes (IF NOT EXISTS keeps it idempotent)
+        await conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS idx_saved_outfits_user_id    ON saved_outfits(user_id)"
+        ))
+        await conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS idx_outfit_ratings_user_id   ON outfit_ratings(user_id)"
+        ))
+        await conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS idx_outfit_ratings_outfit_id ON outfit_ratings(outfit_id)"
+        ))
     yield
     await engine.dispose()
 
