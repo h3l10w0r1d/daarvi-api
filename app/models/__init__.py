@@ -12,6 +12,7 @@ from app.models.store import Store, StoreProduct
 from app.models.user import DnaProfile, DnaStylePreference, User
 from app.models.wishlist import Wishlist
 from app.models.order import Order, OrderItem
+from app.models.outfit import Outfit, OutfitItem
 
 __all__ = [
     "Brand",
@@ -29,4 +30,6 @@ __all__ = [
     "Wishlist",
     "Order",
     "OrderItem",
+    "Outfit",
+    "OutfitItem",
 ]
